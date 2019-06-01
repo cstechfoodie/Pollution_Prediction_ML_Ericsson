@@ -5,8 +5,8 @@ import math
 import datetime
 
 csv_records_list = []
-training_csv_filepath = './challenge2_sorted.csv'
-trained_weights_file = "weights.txt"
+training_csv_file_directory = './challenge2_sorted.csv'
+weights_file_directory = "weights.txt"
 test_result_filepath_prefix = "./test/test_"
 dict_for_cbwd = {'NW':1, "NE":2, "SE":3, "cv":4}
 
@@ -40,6 +40,7 @@ def training(csv_records_list):
     
     if csv_records_list[i+1][5] is not None:
         trainingData(csv_records_list[i], csv_records_list[i+1], weight_list, predicated_pm_for_next_hour, weight_index)
+    persist_weights(weight_list,trained_weights_file)
 
 
 
@@ -138,3 +139,8 @@ def test_model(test_records_list, weights_file_directory, test_result_filepath_p
         except Exception:
             continue
     f.close()
+
+
+csv_records_list = read_data_file(training_csv_file_directory)
+training(csv_records_list)
+test_model(csv_records_list[200:500],weights_file_directory, test_result_filepath_prefix)
