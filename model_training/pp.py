@@ -3,24 +3,19 @@ import os
 import re
 import math
 import datetime
+import math
 
 csv_records_list = []
 training_csv_file_directory = './challenge2_sorted.csv'
 weights_file_directory = "weights.txt"
-test_result_filepath_prefix = "./test/test_"
+test_result_filepath_prefix = "./test_results/test_"
 dict_for_cbwd = {'NW':1, "NE":2, "SE":3, "cv":4}
 
-learning_rate = 0.05
-threshold = 15
-w_DEWP, w_TEMP, w_PRES, w_cbwd, w_iws, w_is, w_ir = 0,0,0,0,0,0,0
+#The learning rate is : 5e-10
+learning_rate = 0.00000000005
+threshold = 25
+#w_DEWP, w_TEMP, w_PRES, w_cbwd, w_iws, w_is, w_ir = 0,0,0,0,0,0,0
 weight_list = [0,0,0,0,0,0,0.16,0.16,0.16,0.16,0.16,0.1,0.1]
-predicated_pm_for_next_hour = 0
-predicated_list = [0]
-current_pm_for_this_hour = 0
-year = 0
-month = 0
-day = 0
-hour = 0
 
 weight_index = 6
 
@@ -33,21 +28,21 @@ def training(csv_records_list):
                 i += 1
                 continue
             else:
-                trainingData(csv_records_list[i], csv_records_list[i+2], weight_list, predicated_pm_for_next_hour, weight_index)
+                trainingData(csv_records_list[i], csv_records_list[i+2], weight_list, weight_index)
         else:
-            trainingData(csv_records_list[i], csv_records_list[i+1], weight_list, predicated_pm_for_next_hour, weight_index)
+            trainingData(csv_records_list[i], csv_records_list[i+1], weight_list, weight_index)
         i += 1
     
     if csv_records_list[i+1][5] is not None:
-        trainingData(csv_records_list[i], csv_records_list[i+1], weight_list, predicated_pm_for_next_hour, weight_index)
-    persist_weights(weight_list,trained_weights_file)
+        trainingData(csv_records_list[i], csv_records_list[i+1], weight_list, weight_index)
+    persist_weights(weight_list,weights_file_directory)
 
 
 
-def trainingData(record_current, record_next, weight_list, predicated_pm_for_next_hour, weight_index):
+def trainingData(record_current, record_next, weight_list, weight_index):
     global threshold
     global learning_rate
-    global predicated_list
+    predicated_pm_for_next_hour = 0
     
     while weight_index < len(record_current):
         if weight_index == 8:
@@ -58,13 +53,15 @@ def trainingData(record_current, record_next, weight_list, predicated_pm_for_nex
             predicated_pm_for_next_hour += record_current[weight_index] * weight_list[weight_index]
         
         weight_index += 1
-    
-    predicated_list.append(predicated_pm_for_next_hour)
-    print(predicated_pm_for_next_hour)
+    #print("predicated_pm_for_next_hour : " , predicated_pm_for_next_hour)
         
     if abs(predicated_pm_for_next_hour - record_next[5]) > threshold:
         error = predicated_pm_for_next_hour - record_next[5]
-
+        if error < 0:
+            error = math.log(abs(error)) * (-1)
+        else:
+            error = math.log(error)
+        error = 1
         weight_index = 6
         while weight_index < len(record_current):
             if weight_index == 8:
@@ -78,8 +75,13 @@ def trainingData(record_current, record_next, weight_list, predicated_pm_for_nex
 
 def convert_to_float_otherwise_none_or_string(input):
     try:
-        return float(input)
+        if input is not None:
+            return float(input)
+        else: 
+            return 0.0
     except ValueError:
+        if input is None:
+            return 0.0
         if len(input) == 0:
             return None
         else:
@@ -101,46 +103,88 @@ def read_data_file(file_directory):
 
 def persist_weights(weights_lst, file_directory):
     f = open(file_directory, "w")
-    line = ','.join(weights_lst)
-    f.write(line)
+    for j in range(len(weights_lst)):
+        weights_lst[j] = str(weights_lst[j])
+    f.write(','.join(weight_list))
     f.close()
 
+def predict(inputs):
+    inputs = re.split(",", inputs)
+    for i in range(5,len(inputs)):
+        inputs[i] = convert_to_float_otherwise_none_or_string(inputs[i])
+
+    f = open(weights_file_directory, "r", encoding="iso8859_2")
+    line = f.readline()
+    weights = re.split(',', line)
+    for i in range(len(weights)):
+        weights[i] = float(weights[i])
+    f.close()
+
+    record_anchor = 6
+    predicted_pm = float(weight_list[record_anchor]) * float(inputs[record_anchor]) + \
+            float(weight_list[record_anchor + 1]) * float(inputs[record_anchor + 1]) + \
+            float(weight_list[record_anchor + 2]) * float(inputs[record_anchor + 2]-1000) + \
+            float(weight_list[record_anchor + 3]) * float(dict_for_cbwd.get(inputs[record_anchor + 3])) + \
+            float(weight_list[record_anchor + 4]) * float(inputs[record_anchor + 4]) + \
+            float(weight_list[record_anchor + 5]) * float(inputs[record_anchor + 5]) + \
+            float(weight_list[record_anchor + 6]) * float(inputs[record_anchor + 6])
+    return int(predicted_pm)
+
 def test_model(test_records_list, weights_file_directory, test_result_filepath_prefix):
+    global weight_list
     predicted_pm = 0
     difference = 0
     is_below_threshhold = False
+    correct_estimate = 0
+    incorrect_estimate = 0
 
     f = open(weights_file_directory, "r", encoding="iso8859_2")
-    line = f.readline(1)
+    line = f.readline()
     weights = re.split(',', line)
+    for i in range(len(weights)):
+        weights[i] = float(weights[i])
     f.close()
 
-    weights_anchor, record_anchor = 0, 6
-    test_result_file_directory = test_result_filepath_prefix + datetime.datetime.now
+    record_anchor = 6
+    test_result_file_directory = test_result_filepath_prefix + str(datetime.datetime.now())
     f = open(test_result_file_directory, "w", encoding="iso8859_2")
     for i in range(len(test_records_list)):
         try:
             record = test_records_list[i]
-            predicted_pm = convert_to_float_otherwise_none_or_string(weights[weights_anchor]) * record[record_anchor] + \
-            convert_to_float_otherwise_none_or_string(weights[weights_anchor + 1]) * record[record_anchor + 1] + \
-            convert_to_float_otherwise_none_or_string(weights[weights_anchor + 2]) * record[record_anchor + 2] + \
-            convert_to_float_otherwise_none_or_string(weights[weights_anchor + 3]) * record[record_anchor + 3] + \
-            convert_to_float_otherwise_none_or_string(weights[weights_anchor + 4]) * record[record_anchor + 4] + \
-            convert_to_float_otherwise_none_or_string(weights[weights_anchor + 5]) * record[record_anchor + 5] + \
-            convert_to_float_otherwise_none_or_string(weights[weights_anchor + 6]) * record[record_anchor + 6]
-
-            difference = abs(predicted_pm - test_records_list[i+1][5])
+            for i in range(len(record)):
+                record[i] = convert_to_float_otherwise_none_or_string(record[i])
+            predicted_pm = float(weights[record_anchor]) * float(record[record_anchor]) + \
+            float(weights[record_anchor + 1]) * float(record[record_anchor + 1]) + \
+            float(weights[record_anchor + 2]) * float(record[record_anchor + 2]-1000) + \
+            float(weights[record_anchor + 3]) * float(dict_for_cbwd.get(record[record_anchor + 3])) + \
+            float(weights[record_anchor + 4]) * float(record[record_anchor + 4]) + \
+            float(weights[record_anchor + 5]) * float(record[record_anchor + 5]) + \
+            float(weights[record_anchor + 6]) * float(record[record_anchor + 6])
+            expected_pm = convert_to_float_otherwise_none_or_string(test_records_list[i+1][5])
+            difference = abs(predicted_pm - expected_pm)
             if difference <= threshold:
                 is_below_threshhold = True
+                correct_estimate += 1
             else:
                 is_below_threshhold = False
-                record.extend(list(predicted_pm, difference, is_below_threshhold))
-                f.write(",".join(record))
+                incorrect_estimate += 1
+            record.extend(list([predicted_pm, is_below_threshhold, difference]))
+            for j in range(len(record)):
+                record[j] = str(record[j])
+            f.write(",".join(record) + '\r')
         except Exception:
             continue
+    f.write("------------------------------Report----------------\r")
+    f.write("The allowed differece between estimation and real is : " + str(threshold) + "\r")
+    f.write("The learning rate is : " + str(learning_rate) + "\r")
+    f.write("correct estimated is : " + str(correct_estimate) + "\r")
+    f.write("incorrect estimated is : " + str(incorrect_estimate) + "\r")
+    f.write("The accuracy is : " + str(correct_estimate/(correct_estimate+incorrect_estimate)) + "\r")
     f.close()
 
 
 csv_records_list = read_data_file(training_csv_file_directory)
-training(csv_records_list)
-test_model(csv_records_list[200:500],weights_file_directory, test_result_filepath_prefix)
+training(csv_records_list[10000:])
+test_model(csv_records_list[0:10000],weights_file_directory, test_result_filepath_prefix)
+intputs = "2656.0,2014.0,1.0,3.0,13.0,29.0,-17.0,9.0,1022.0,NW,22.35,0.0,0.0"
+print(predict(intputs))
