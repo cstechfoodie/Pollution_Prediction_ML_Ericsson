@@ -4,6 +4,7 @@ csv_records_list = []
 training_csv_filepath = './challenge2_sorted.csv'
 trained_weights_file = "weights.txt"
 test_result_filepath_prefix = "./test_"
+dict_for_cbwd = {'NW':1, "NE":2, "SE":3, "cv":4}
 
 learning_rate = 0.05
 threshold = 15
