@@ -28,4 +28,6 @@ Reports on the weather and the level of pollution each hour for five years
 
 ## Troubleshoot
 ### Disable web security
+```bash
 open -a Google\ Chrome --args --disable-web-security --user-data-dir=""
+```
