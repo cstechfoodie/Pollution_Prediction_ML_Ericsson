@@ -14,7 +14,7 @@ Reports on the weather and the level of pollution each hour for five years
 
 ## Run the server
 
-1. pip3 install "pyramid==1.10.4" waitress
+1. Run in terminal `pip3 install "pyramid==1.10.4" waitress`
 2. run `python3 ./web/server.py`
 3. Open browser `localhost:9090/hello` and `localhost:9090/predict`
 
