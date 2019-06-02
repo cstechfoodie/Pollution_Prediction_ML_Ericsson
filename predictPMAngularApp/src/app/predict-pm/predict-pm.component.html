@@ -1,0 +1,11 @@
+<p>
+  The predicted PM2.5 for next hour is:
+</p>
+<div>
+  {{ predictedPm }}
+</div>
+<div *ngIf="changed">This value has been changed</div>
+<br />
+<button (click)="tryAnother()">Test following condition</button>
+<br />
+<div>{{ testCondition }}</div>

@@ -4,16 +4,18 @@ from pyramid.response import Response
 import re
 
 weights_file_directory = "weights.txt"
-dict_for_cbwd = {'NW':1, "NE":2, "SE":3, "cv":4}
+dict_for_cbwd = {'NW': 1, "NE": 2, "SE": 3, "cv": 4}
+
 
 def hello_world(request):
     return Response('Hello World!')
+
 
 def convert_to_float_otherwise_none_or_string(input):
     try:
         if input is not None:
             return float(input)
-        else: 
+        else:
             return 0.0
     except ValueError:
         if input is None:
@@ -23,10 +25,15 @@ def convert_to_float_otherwise_none_or_string(input):
         else:
             return str(input)
 
+
 def predict_pm(request):
     inputs = "2656.0,2014.0,1.0,3.0,13.0,29.0,-17.0,9.0,1022.0,NW,22.35,0.0,0.0"
+    print(request.method)
+    if str(request.method) == 'POST':
+        print(request.body.decode('ascii'))
+        inputs = request.body.decode('ascii')
     inputs = re.split(",", inputs)
-    for i in range(5,len(inputs)):
+    for i in range(5, len(inputs)):
         inputs[i] = convert_to_float_otherwise_none_or_string(inputs[i])
 
     f = open(weights_file_directory, "r", encoding="iso8859_2")
@@ -38,13 +45,14 @@ def predict_pm(request):
 
     record_anchor = 6
     predicted_pm = float(weights[record_anchor]) * float(inputs[record_anchor]) + \
-            float(weights[record_anchor + 1]) * float(inputs[record_anchor + 1]) + \
-            float(weights[record_anchor + 2]) * float(inputs[record_anchor + 2]-1000) + \
-            float(weights[record_anchor + 3]) * float(dict_for_cbwd.get(inputs[record_anchor + 3])) + \
-            float(weights[record_anchor + 4]) * float(inputs[record_anchor + 4]) + \
-            float(weights[record_anchor + 5]) * float(inputs[record_anchor + 5]) + \
-            float(weights[record_anchor + 6]) * float(inputs[record_anchor + 6])
+        float(weights[record_anchor + 1]) * float(inputs[record_anchor + 1]) + \
+        float(weights[record_anchor + 2]) * float(inputs[record_anchor + 2]-1000) + \
+        float(weights[record_anchor + 3]) * float(dict_for_cbwd.get(inputs[record_anchor + 3])) + \
+        float(weights[record_anchor + 4]) * float(inputs[record_anchor + 4]) + \
+        float(weights[record_anchor + 5]) * float(inputs[record_anchor + 5]) + \
+        float(weights[record_anchor + 6]) * float(inputs[record_anchor + 6])
     return Response(str(predicted_pm))
+
 
 if __name__ == '__main__':
     with Configurator() as config:
