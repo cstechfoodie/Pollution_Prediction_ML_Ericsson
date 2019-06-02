@@ -25,3 +25,7 @@ Reports on the weather and the level of pollution each hour for five years
 3. Check where the default PM value come from, and click the button more than one time. See what happen and understand why!
 4. Make this app look good and edit this readMe again. (could consider add those fancy UI from our lovely designer). Make sure this repo is ready for presentation in interview
 5. After this fork one copy to your repo and maintain it there. (Please fork after you have made this site fully functional and you like it)
+
+## Troubleshoot
+### Disable web security
+open -a Google\ Chrome --args --disable-web-security --user-data-dir=""
