@@ -183,8 +183,8 @@ def test_model(test_records_list, weights_file_directory, test_result_filepath_p
     f.close()
 
 
-csv_records_list = read_data_file(training_csv_file_directory)
-training(csv_records_list[10000:])
-test_model(csv_records_list[0:10000],weights_file_directory, test_result_filepath_prefix)
-intputs = "2656.0,2014.0,1.0,3.0,13.0,29.0,-17.0,9.0,1022.0,NW,22.35,0.0,0.0"
-print(predict(intputs))
+# csv_records_list = read_data_file(training_csv_file_directory)
+# training(csv_records_list[10000:])
+# test_model(csv_records_list[0:10000],weights_file_directory, test_result_filepath_prefix)
+# inputs = "2656.0,2014.0,1.0,3.0,13.0,29.0,-17.0,9.0,1022.0,NW,22.35,0.0,0.0"
+# print(predict(inputs))
